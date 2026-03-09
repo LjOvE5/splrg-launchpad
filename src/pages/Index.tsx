@@ -133,8 +133,6 @@ const Index: React.FC = () => {
       const activePrice = phase === MintPhase.Whitelist ? whitelistPrice : publicPrice;
       const priceInMonRaw = formatEther(activePrice);
       const priceInMon = parseFloat(priceInMonRaw).toString(); // strip trailing .0
-      const supplyNum = Number(maxSupply);
-      const mintedNum = Number(totalMinted);
       setContractData(prev => ({
         ...prev,
         mintPrice: priceInMon,
