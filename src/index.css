@@ -1,0 +1,282 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark SPLRG Theme */
+    --background: 0 2% 14%; /* #242222 */
+    --foreground: 310 45% 92%; /* Light pink text */
+
+    --card: 0 2% 18%;
+    --card-foreground: 310 45% 92%;
+
+    --popover: 0 2% 16%;
+    --popover-foreground: 310 45% 92%;
+
+    /* Primary - SPLRG Purple #7A2C85 */
+    --primary: 294 50% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - #9A2FAD */
+    --secondary: 292 57% 43%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 2% 22%;
+    --muted-foreground: 310 20% 65%;
+
+    /* Accent - Gold #FFD700 */
+    --accent: 51 100% 50%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 310 15% 25%;
+    --input: 310 15% 22%;
+    --ring: 294 50% 35%;
+
+    --radius: 0.75rem;
+
+    /* Custom colors */
+    --purple-dark: 294 55% 28%;
+    --purple-light: 310 50% 75%;
+    --pink-glow: 310 60% 60%;
+    --gold-dark: 45 100% 45%;
+    --gold-light: 51 100% 70%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(294 50% 35%) 0%, hsl(292 57% 43%) 50%, hsl(310 60% 50%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(51 100% 50%) 0%, hsl(45 100% 45%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(0 2% 14%) 0%, hsl(0 2% 10%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 2% 20% / 0.8) 0%, hsl(0 2% 16% / 0.9) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsl(310 60% 50% / 0.1);
+    --shadow-md: 0 4px 16px hsl(310 60% 50% / 0.15);
+    --shadow-lg: 0 8px 32px hsl(310 60% 50% / 0.2);
+    --shadow-glow: 0 0 30px hsl(310 60% 50% / 0.3);
+    --shadow-gold: 0 4px 20px hsl(51 100% 50% / 0.3);
+
+    --sidebar-background: 0 2% 16%;
+    --sidebar-foreground: 310 45% 92%;
+    --sidebar-primary: 294 50% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 2% 22%;
+    --sidebar-accent-foreground: 310 45% 92%;
+    --sidebar-border: 310 15% 25%;
+    --sidebar-ring: 294 50% 35%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    font-family: 'Open Sans', sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .gradient-dark {
+    background: var(--gradient-dark);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .shadow-primary {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass effect */
+  .glass {
+    background: hsl(0 2% 18% / 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(310 15% 30% / 0.5);
+  }
+
+  .glass-strong {
+    background: hsl(0 2% 16% / 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(310 15% 35% / 0.5);
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.7);
+  }
+
+  /* Animations */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px hsl(310 60% 50% / 0.3); }
+    50% { box-shadow: 0 0 40px hsl(310 60% 50% / 0.5); }
+  }
+
+  /* Falling Monad logos (snow-like) */
+  .animate-fall-monad {
+    animation: fall-monad linear infinite;
+  }
+
+  @keyframes fall-monad {
+    0% { transform: translateY(-20%) rotate(0deg); }
+    100% { transform: translateY(120vh) rotate(360deg); }
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    background: hsl(var(--muted));
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    background: var(--gradient-primary);
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .btn-gold {
+    background: var(--gradient-gold);
+    color: hsl(0 2% 10%);
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-gold:hover {
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-2px);
+  }
+
+  /* Countdown styles */
+  .countdown-box {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 1rem;
+    min-width: 70px;
+    text-align: center;
+  }
+
+  /* NFT reveal animation */
+  .reveal-animation {
+    animation: reveal 0.8s ease forwards;
+  }
+
+  @keyframes reveal {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) rotateY(180deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotateY(0deg);
+    }
+  }
+
+  /* Pulse glow for mint button */
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px hsl(51 100% 50% / 0.3); }
+    50% { box-shadow: 0 0 40px hsl(51 100% 50% / 0.6); }
+  }
+}
