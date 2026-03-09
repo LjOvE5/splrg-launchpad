@@ -104,18 +104,16 @@ const Index: React.FC = () => {
   }, []);
 
   // Fetch contract data. Optionally silent (no toast on error) for post-admin refresh.
-  // Uses SPLRGLaunchpad view functions (whitelistPrice, publicPrice, maxSupply, totalSupply, maxPerWallet, publicMintActive, whitelistMintActive).
+  // Uses SPLRGLaunchpad view functions (publicPrice, maxSupply, totalSupply, maxPerWallet, publicMintActive).
   const fetchContractData = useCallback(async (opts?: { silent?: boolean }): Promise<boolean> => {
     const runFetch = async (provider: BrowserProvider | JsonRpcProvider) => {
       const contract = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, provider);
-      const [whitelistPrice, publicPrice, maxSupply, totalMinted, maxPerWallet, publicActive, whitelistActive] = await Promise.all([
-        contract.whitelistPrice(),
+      const [publicPrice, maxSupply, totalMinted, maxPerWallet, publicActive] = await Promise.all([
         contract.publicPrice(),
         contract.maxSupply(),
         contract.totalSupply(),
         contract.maxPerWallet(),
-        contract.publicMintActive(),
-        contract.whitelistMintActive()
+        contract.publicMintActive()
       ]);
       const supplyCount = Number(maxSupply);
       const mintedCount = Number(totalMinted);
@@ -124,14 +122,11 @@ const Index: React.FC = () => {
         phase = MintPhase.Complete;
       } else if (publicActive) {
         phase = MintPhase.Public;
-      } else if (whitelistActive) {
-        phase = MintPhase.Whitelist;
       } else {
         phase = MintPhase.Inactive;
       }
 
-      const activePrice = phase === MintPhase.Whitelist ? whitelistPrice : publicPrice;
-      const priceInMonRaw = formatEther(activePrice);
+      const priceInMonRaw = formatEther(publicPrice);
       const priceInMon = parseFloat(priceInMonRaw).toString(); // strip trailing .0
       setContractData(prev => ({
         ...prev,
@@ -291,7 +286,7 @@ const Index: React.FC = () => {
     }
   };
 
-  const isMintActive = contractData.currentPhase === MintPhase.Public || contractData.currentPhase === MintPhase.Whitelist;
+  const isMintActive = contractData.currentPhase === MintPhase.Public;
 
   const handleQuantityChange = (delta: number) => {
     const newQuantity = quantity + delta;
