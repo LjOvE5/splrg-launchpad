@@ -117,10 +117,10 @@ const Index: React.FC = () => {
         contract.publicMintActive(),
         contract.whitelistMintActive()
       ]);
-      const supplyNum = Number(maxSupply);
-      const mintedNum = Number(totalMinted);
+      const supplyCount = Number(maxSupply);
+      const mintedCount = Number(totalMinted);
       let phase: MintPhase;
-      if (mintedNum >= supplyNum && supplyNum > 0) {
+      if (mintedCount >= supplyCount && supplyCount > 0) {
         phase = MintPhase.Complete;
       } else if (publicActive) {
         phase = MintPhase.Public;
@@ -136,8 +136,8 @@ const Index: React.FC = () => {
       setContractData(prev => ({
         ...prev,
         mintPrice: priceInMon,
-        totalSupply: supplyNum,
-        minted: mintedNum,
+        totalSupply: supplyCount,
+        minted: mintedCount,
         maxPerWallet: Number(maxPerWallet),
         currentPhase: phase
       }));
