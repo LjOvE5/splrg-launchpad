@@ -61,7 +61,8 @@ export class WalletService {
 
     constructor(callbacks?: WalletCallbacks) {
         this.callbacks = callbacks || {};
-        this.initialize();
+        // Do not automatically initialize or touch wallets on page load.
+        // Connection only happens when user clicks the Connect button.
     }
 
     private updateState(updates: Partial<WalletState>) {
@@ -264,80 +265,7 @@ export class WalletService {
             }
         };
 
-        const checkExistingConnection = async () => {
-            try {
-                const wasDisconnected = localStorage.getItem('wallet_disconnect_requested');
-                if (wasDisconnected === 'true') {
-                    return;
-                }
-
-                const preferredWallet = localStorage.getItem('preferred_wallet');
-                
-                // Try preferred wallet first
-                if (preferredWallet === 'phantom') {
-                    const phantomProvider = getPhantomProvider();
-                    if (phantomProvider) {
-                        this.currentProvider = phantomProvider;
-                        const accounts = await phantomProvider.request({ method: 'eth_accounts' });
-                        if (accounts.length > 0) {
-                            this.updateState({ account: accounts[0], walletType: 'phantom' });
-                            this.callbacks.onWalletChange?.(accounts[0]);
-                            await this.checkNetwork();
-                            setTimeout(() => this.fetchBalance(accounts[0]), 100);
-                            return;
-                        }
-                    }
-                }
-
-                if (preferredWallet === 'metamask') {
-                    const metaMaskProvider = getMetaMaskProvider();
-                    if (metaMaskProvider) {
-                        this.currentProvider = metaMaskProvider;
-                        const accounts = await metaMaskProvider.request({ method: 'eth_accounts' });
-                        if (accounts.length > 0) {
-                            this.updateState({ account: accounts[0], walletType: 'metamask' });
-                            this.callbacks.onWalletChange?.(accounts[0]);
-                            await this.checkNetwork();
-                            setTimeout(() => this.fetchBalance(accounts[0]), 100);
-                            return;
-                        }
-                    }
-                }
-
-                // Try Phantom first if no preference
-                const phantomProvider = getPhantomProvider();
-                if (phantomProvider) {
-                    const accounts = await phantomProvider.request({ method: 'eth_accounts' });
-                    if (accounts.length > 0) {
-                        this.currentProvider = phantomProvider;
-                        this.updateState({ account: accounts[0], walletType: 'phantom' });
-                        this.callbacks.onWalletChange?.(accounts[0]);
-                        await this.checkNetwork();
-                        setTimeout(() => this.fetchBalance(accounts[0]), 100);
-                        return;
-                    }
-                }
-
-                // Try MetaMask as fallback
-                const metaMaskProvider = getMetaMaskProvider();
-                if (metaMaskProvider) {
-                    const accounts = await metaMaskProvider.request({ method: 'eth_accounts' });
-                    if (accounts.length > 0) {
-                        this.currentProvider = metaMaskProvider;
-                        this.updateState({ account: accounts[0], walletType: 'metamask' });
-                        this.callbacks.onWalletChange?.(accounts[0]);
-                        await this.checkNetwork();
-                        setTimeout(() => this.fetchBalance(accounts[0]), 100);
-                    }
-                }
-            } catch (error) {
-                console.log('Failed to check existing connection:', error);
-            }
-        };
-
-        await checkExistingConnection();
-
-        // Set up listeners for both providers
+        // Set up listeners for both providers (no auto-connect; user clicks Connect explicitly)
         const phantomProvider = getPhantomProvider();
         const metaMaskProvider = getMetaMaskProvider();
 
