@@ -88,13 +88,7 @@ const Index: React.FC = () => {
     canMint: false
   });
 
-  // Intro timing: let the portal zoom, then automatically transition into the site
-  useEffect(() => {
-    if (!showIntro) return;
-    const totalMs = 6000; // keep in sync with portal animation duration
-    const t = setTimeout(() => setShowIntro(false), totalMs);
-    return () => clearTimeout(t);
-  }, [showIntro]);
+  // Intro video: transition handled by video onEnded
 
   // Get provider for read operations. When wallet is connected, use its provider so we read from the same RPC that worked for txs.
   const getReadProvider = useCallback((): BrowserProvider | JsonRpcProvider => {
@@ -476,34 +470,20 @@ const Index: React.FC = () => {
     );
   }
 
-  if (showIntro) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-black via-[#14071f] to-black text-foreground">
-        <div className="relative flex flex-col items-center gap-10">
-          {/* Portal GIF full focus, covers most of screen height on desktop */}
-          <div className="relative w-[80vw] max-w-[540px] aspect-square overflow-hidden rounded-full shadow-[0_0_80px_rgba(168,85,247,0.8)]">
-            <img
-              src="/portal.gif"
-              alt="SPLRG portal"
-              className="w-full h-full object-cover animate-portal-zoom"
-            />
-          </div>
-        </div>
-        <style>{`
-          @keyframes portalZoom {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.2); }
-          }
-          .animate-portal-zoom {
-            animation: portalZoom 2s linear 3;
-          }
-        `}</style>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {showIntro && (
+        <div className="fixed inset-0 z-[200] bg-black">
+          <video
+            src="/splrg-intro.mp4"
+            className="w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+            onEnded={() => setShowIntro(false)}
+          />
+        </div>
+      )}
       {/* Background Image */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
