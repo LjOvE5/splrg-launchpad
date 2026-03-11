@@ -77,7 +77,6 @@ const Index: React.FC = () => {
   const [spinWheel, setSpinWheel] = useState<{ txHash: string; wallet: string } | null>(null);
   const [mintSuccess, setMintSuccess] = useState<{ tokenId: number; txHash: string } | null>(null);
   const [showIntro, setShowIntro] = useState(true);
-  const [introReady, setIntroReady] = useState(false);
   const [contractData, setContractData] = useState<ContractData>({
     mintPrice: '1500',
     totalSupply: 650,
@@ -89,11 +88,11 @@ const Index: React.FC = () => {
     canMint: false
   });
 
-  // Intro timing: let the portal zoom for 3 loops, then show SPLRG + Enter button
+  // Intro timing: let the portal zoom, then automatically transition into the site
   useEffect(() => {
     if (!showIntro) return;
-    const totalMs = 6000; // 2s per loop * 3
-    const t = setTimeout(() => setIntroReady(true), totalMs);
+    const totalMs = 6000; // keep in sync with portal animation duration
+    const t = setTimeout(() => setShowIntro(false), totalMs);
     return () => clearTimeout(t);
   }, [showIntro]);
 
@@ -480,31 +479,15 @@ const Index: React.FC = () => {
   if (showIntro) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-black via-[#14071f] to-black text-foreground">
-        <div className="relative flex flex-col items-center gap-6">
-          {/* Portal GIF with slow zoom (3 loops) */}
-          <div className="relative w-72 h-72 overflow-hidden rounded-full shadow-[0_0_60px_rgba(168,85,247,0.6)]">
+        <div className="relative flex flex-col items-center gap-10">
+          {/* Portal GIF full focus, covers most of screen height on desktop */}
+          <div className="relative w-[80vw] max-w-[540px] aspect-square overflow-hidden rounded-full shadow-[0_0_80px_rgba(168,85,247,0.8)]">
             <img
               src="/portal.gif"
               alt="SPLRG portal"
               className="w-full h-full object-cover animate-portal-zoom"
             />
           </div>
-
-          {/* SPLRG appears only after portal animation has run */}
-          {introReady && (
-            <>
-              <div className="font-heading text-3xl font-bold tracking-[0.4em] text-purple-100 uppercase">
-                SPLRG
-              </div>
-              <Button
-                size="lg"
-                className="btn-primary px-10 py-6 text-lg font-heading font-bold rounded-xl"
-                onClick={() => setShowIntro(false)}
-              >
-                Enter
-              </Button>
-            </>
-          )}
         </div>
         <style>{`
           @keyframes portalZoom {
