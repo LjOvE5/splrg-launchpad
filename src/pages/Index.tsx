@@ -76,6 +76,7 @@ const Index: React.FC = () => {
   const [isLoadingContract, setIsLoadingContract] = useState(true);
   const [spinWheel, setSpinWheel] = useState<{ txHash: string; wallet: string } | null>(null);
   const [mintSuccess, setMintSuccess] = useState<{ tokenId: number; txHash: string } | null>(null);
+  const [showIntro, setShowIntro] = useState(true);
   const [contractData, setContractData] = useState<ContractData>({
     mintPrice: '1500',
     totalSupply: 650,
@@ -464,6 +465,47 @@ const Index: React.FC = () => {
         onSetPublicPrice={handleAdminSetPublicPrice}
         onStartPublicPhase={handleAdminStartPublicPhase}
       />
+    );
+  }
+
+  if (showIntro) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black via-[#14071f] to-black text-foreground">
+        <div className="relative flex flex-col items-center gap-8">
+          {/* Portal rings */}
+          <div className="relative w-56 h-56">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-b from-purple-500/60 via-fuchsia-500/40 to-transparent blur-2xl opacity-70" />
+            <div className="absolute inset-6 rounded-full border border-purple-300/40 animate-spin-slow" />
+            <div className="absolute inset-10 rounded-full border border-purple-500/80 shadow-[0_0_40px_rgba(168,85,247,0.7)]" />
+            <div className="absolute inset-16 rounded-full bg-black/80 flex items-center justify-center">
+              <span className="font-heading text-lg font-semibold tracking-wide text-purple-100">
+                SPLRG
+              </span>
+            </div>
+          </div>
+          <div className="text-center max-w-md space-y-3">
+            <p className="text-xs uppercase tracking-[0.25em] text-purple-300/80">Enter the mall</p>
+            <p className="font-heading text-2xl font-bold text-foreground">
+              Step through the portal to mint your SPLRG.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              A cinematic experience awaits inside – doors, sounds, and the wheel. Click below to enter.
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="btn-primary px-10 py-6 text-lg font-heading font-bold rounded-xl"
+            onClick={() => setShowIntro(false)}
+          >
+            Enter SPLRG Launchpad
+          </Button>
+        </div>
+        <style>{`
+          .animate-spin-slow {
+            animation: spin 10s linear infinite;
+          }
+        `}</style>
+      </div>
     );
   }
 
