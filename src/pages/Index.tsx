@@ -77,7 +77,7 @@ const Index: React.FC = () => {
   const [spinWheel, setSpinWheel] = useState<{ txHash: string; wallet: string } | null>(null);
   const [mintSuccess, setMintSuccess] = useState<{ tokenId: number; txHash: string } | null>(null);
   const [contractData, setContractData] = useState<ContractData>({
-    mintPrice: '1500',
+    mintPrice: '2100',
     totalSupply: 650,
     minted: 0,
     maxPerWallet: 3,
@@ -271,7 +271,7 @@ const Index: React.FC = () => {
     ? (displayMinted / contractData.totalSupply) * 100 
     : 0;
   const remaining = contractData.totalSupply - contractData.minted;
-  const maxMint = Math.min(contractData.userRemaining, remaining);
+  const maxMint = remaining;
   const totalPrice = Math.round(parseFloat(contractData.mintPrice) * quantity);
 
   // Get phase display text
@@ -744,7 +744,7 @@ const Index: React.FC = () => {
                   <div className="mb-4 p-3 rounded-lg bg-muted/20 border border-border">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Your mints:</span>
-                      <span className="font-medium text-foreground">{contractData.userMinted} / {contractData.maxPerWallet}</span>
+                      <span className="font-medium text-foreground">{contractData.userMinted}</span>
                     </div>
                   </div>
                 )}
@@ -815,13 +815,6 @@ const Index: React.FC = () => {
                   >
                     {contractData.currentPhase === MintPhase.Complete ? 'Mint Complete' : 'Mint Not Active'}
                   </Button>
-                ) : contractData.userRemaining <= 0 ? (
-                  <Button
-                    disabled
-                    className="w-full h-14 text-lg font-semibold rounded-xl bg-muted text-muted-foreground"
-                  >
-                    Max Per Wallet Reached
-                  </Button>
                 ) : (
                   <Button
                     onClick={handleMint}
@@ -842,10 +835,7 @@ const Index: React.FC = () => {
                   </Button>
                 )}
 
-                {/* Max per wallet info */}
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  Max {contractData.maxPerWallet} per wallet
-                </p>
+                {/* No per-wallet mint cap text anymore */}
               </div>
             </div>
           </div>
