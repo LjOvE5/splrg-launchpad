@@ -76,7 +76,6 @@ const Index: React.FC = () => {
   const [isLoadingContract, setIsLoadingContract] = useState(true);
   const [spinWheel, setSpinWheel] = useState<{ txHash: string; wallet: string } | null>(null);
   const [mintSuccess, setMintSuccess] = useState<{ tokenId: number; txHash: string } | null>(null);
-  const [showIntro, setShowIntro] = useState(true);
   const [contractData, setContractData] = useState<ContractData>({
     mintPrice: '1500',
     totalSupply: 650,
@@ -472,18 +471,6 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {showIntro && (
-        <div className="fixed inset-0 z-[200] bg-black">
-          <video
-            src="/splrg-intro.mp4"
-            className="w-full h-full object-cover"
-            autoPlay
-            muted
-            playsInline
-            onEnded={() => setShowIntro(false)}
-          />
-        </div>
-      )}
       {/* Background Image */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
