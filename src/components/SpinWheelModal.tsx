@@ -7,8 +7,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { SpinWheel } from '@/components/SpinWheel'
-import { WHEEL_PRIZES, type WheelPrize } from '@/config/wheel'
-import { insertSpinResult } from '@/lib/supabase'
+import { WHEEL_PRIZES, DEFAULT_WHEEL_ROUND, type WheelPrize } from '@/config/wheel'
+import { getWonPrizeTicketIds, insertSpinResult } from '@/lib/supabase'
 
 type Step = 'prompt' | 'wheel' | 'result'
 
@@ -29,31 +29,78 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('prompt')
   const [result, setResult] = useState<WheelPrize | null>(null)
+  const [forcedPrizeIndex, setForcedPrizeIndex] = useState<number | null>(null)
+  const [selecting, setSelecting] = useState(false)
+
+  const wheelRound = DEFAULT_WHEEL_ROUND
 
   const handleSkip = () => {
     setStep('prompt')
     setResult(null)
+    setForcedPrizeIndex(null)
     onOpenChange(false)
   }
 
-  const handleSpin = () => {
-    setStep('wheel')
+  const handleSpin = async () => {
+    if (selecting) return
+    setSelecting(true)
+    try {
+      // Claim a remaining prize ticket in Supabase before the animation completes.
+      // This avoids double-assigning the same ticket under concurrent spins.
+      let lastPick: { p: WheelPrize; idx: number } | null = null
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const wonTicketIds = await getWonPrizeTicketIds(wheelRound)
+        const available = WHEEL_PRIZES
+          .map((p, idx) => ({ p, idx }))
+          .filter(({ p }) => !wonTicketIds.includes(p.id))
+
+        const pick =
+          available.length > 0
+            ? available[Math.floor(Math.random() * available.length)]
+            : { p: WHEEL_PRIZES[WHEEL_PRIZES.length - 1], idx: WHEEL_PRIZES.length - 1 }
+
+        lastPick = pick
+
+        const saved = await insertSpinResult({
+          wallet_address: walletAddress,
+          prize: pick.p.value,
+          prize_ticket_id: pick.p.id,
+          wheel_round: wheelRound,
+          mint_tx_hash: mintTxHash,
+        })
+
+        if (saved) {
+          onRecorded?.()
+          setForcedPrizeIndex(pick.idx)
+          setResult(pick.p)
+          setStep('wheel')
+          return
+        }
+        // If insert failed, it likely means another client claimed the same ticket.
+      }
+
+      // If we couldn't claim (should be rare), still show the wheel landing on the last pick.
+      if (lastPick) {
+        setForcedPrizeIndex(lastPick.idx)
+        setResult(lastPick.p)
+        setStep('wheel')
+      } else {
+        setStep('result')
+      }
+    } finally {
+      setSelecting(false)
+    }
   }
 
   const handleComplete = async (prize: WheelPrize) => {
     setResult(prize)
-    const saved = await insertSpinResult({
-      wallet_address: walletAddress,
-      prize: prize.value,
-      mint_tx_hash: mintTxHash,
-    })
-    if (saved) onRecorded?.()
     setStep('result')
   }
 
   const handleClose = () => {
     setStep('prompt')
     setResult(null)
+    setForcedPrizeIndex(null)
     onOpenChange(false)
   }
 
@@ -84,8 +131,9 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
               <Button
                 className="flex-1 btn-primary"
                 onClick={handleSpin}
+                disabled={selecting}
               >
-                Spin
+                {selecting ? 'Choosing…' : 'Spin'}
               </Button>
             </div>
           </div>
@@ -93,7 +141,7 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
 
         {step === 'wheel' && (
           <div className="py-2">
-            <SpinWheel onComplete={handleComplete} size={360} />
+            <SpinWheel onComplete={handleComplete} size={360} forcedPrizeIndex={forcedPrizeIndex} />
           </div>
         )}
 

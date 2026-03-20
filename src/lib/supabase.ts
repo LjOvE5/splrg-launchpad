@@ -12,6 +12,8 @@ export interface SpinResult {
   id?: string
   wallet_address: string
   prize: string
+  prize_ticket_id?: string
+  wheel_round?: string
   mint_tx_hash: string | null
   created_at?: string
 }
@@ -27,6 +29,8 @@ export async function insertSpinResult(row: Omit<SpinResult, 'id' | 'created_at'
     const { error } = await supabase.from(TABLE).insert({
       wallet_address: row.wallet_address.toLowerCase(),
       prize: row.prize,
+      prize_ticket_id: row.prize_ticket_id || null,
+      wheel_round: row.wheel_round || 'default',
       mint_tx_hash: row.mint_tx_hash || null,
     })
     if (error) {
@@ -55,6 +59,28 @@ export async function getSpinResults(limit = 200): Promise<SpinResult[]> {
     return (data as SpinResult[]) || []
   } catch (e) {
     console.error('getSpinResults', e)
+    return []
+  }
+}
+
+export async function getWonPrizeTicketIds(wheel_round: string): Promise<string[]> {
+  if (!supabase) return []
+  try {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('prize_ticket_id')
+      .eq('wheel_round', wheel_round)
+      .not('prize_ticket_id', 'is', null)
+
+    if (error) {
+      console.error('getWonPrizeTicketIds:', error)
+      return []
+    }
+    return (data || [])
+      .map((r: any) => r.prize_ticket_id as string)
+      .filter(Boolean)
+  } catch (e) {
+    console.error('getWonPrizeTicketIds', e)
     return []
   }
 }

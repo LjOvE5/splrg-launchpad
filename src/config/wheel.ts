@@ -7,26 +7,22 @@ export interface WheelPrize {
   id: string
   label: string
   value: string // for recording (e.g. "100 $MON")
-  weight: number
+  weight: number // currently informational; selection is uniform per remaining ticket instance
   color: string // Tailwind class or CSS color for segment
 }
 
 export const WHEEL_PRIZES: WheelPrize[] = [
-  { id: 'mon', label: '100 $MON', value: '100 $MON', weight: 1, color: '#C9A962' },   // premium muted gold
-  { id: 'splrg', label: '200 $SPLRG', value: '200 $SPLRG', weight: 1, color: '#7B5C8A' }, // premium muted purple
-  { id: 'none', label: 'Better Luck Next Time', value: 'Better Luck Next Time', weight: 1, color: '#3D3D3D' }, // soft charcoal
+  // Wheel "tickets": if you want a prize to appear multiple times, include multiple entries
+  // (same label/value/color, but unique `id`). After a ticket is won, it is removed.
+  { id: 'mon_1', label: '100 $MON', value: '100 $MON', weight: 1, color: '#C9A962' },    // premium muted gold
+  { id: 'splrg_1', label: '200 $SPLRG', value: '200 $SPLRG', weight: 1, color: '#7B5C8A' }, // premium muted purple
+  { id: 'none_1', label: 'Better Luck Next Time', value: 'Better Luck Next Time', weight: 1, color: '#3D3D3D' }, // soft charcoal
 ]
-
-const totalWeight = WHEEL_PRIZES.reduce((s, p) => s + p.weight, 0)
-export const WHEEL_PRIZE_ANGLES = WHEEL_PRIZES.map((p) => (p.weight / totalWeight) * 360)
 
 /** Pick a random prize index by weight */
 export function pickRandomPrizeIndex(): number {
-  const r = Math.random() * totalWeight
-  let acc = 0
-  for (let i = 0; i < WHEEL_PRIZES.length; i++) {
-    acc += WHEEL_PRIZES[i].weight
-    if (r < acc) return i
-  }
-  return WHEEL_PRIZES.length - 1
+  // Selection is uniform per remaining ticket instance.
+  return Math.floor(Math.random() * WHEEL_PRIZES.length)
 }
+
+export const DEFAULT_WHEEL_ROUND = 'default'

@@ -9,16 +9,17 @@ const EXTRA_ROTATIONS = 5
 interface SpinWheelProps {
   onComplete: (prize: WheelPrize) => void
   size?: number
+  forcedPrizeIndex?: number | null
 }
 
-export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280 }) => {
+export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, forcedPrizeIndex = null }) => {
   const [rotation, setRotation] = useState(0)
   const [isSpinning, setIsSpinning] = useState(false)
   const resultIndexRef = useRef<number | null>(null)
 
   const spin = useCallback(() => {
     if (isSpinning) return
-    const index = pickRandomPrizeIndex()
+    const index = forcedPrizeIndex != null ? forcedPrizeIndex : pickRandomPrizeIndex()
     resultIndexRef.current = index
     setIsSpinning(true)
     // Center of winning segment (degrees from top): index * 120 + 60
@@ -32,7 +33,7 @@ export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280 }) 
       onComplete(WHEEL_PRIZES[resultIndexRef.current!])
     }, SPIN_DURATION_MS)
     return () => clearTimeout(timer)
-  }, [onComplete, isSpinning])
+  }, [onComplete, isSpinning, forcedPrizeIndex])
 
   const radius = size / 2
   const innerR = radius - 8 // inner gap for center circle

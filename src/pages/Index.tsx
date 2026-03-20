@@ -74,8 +74,10 @@ const Index: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [isMinting, setIsMinting] = useState(false);
   const [isLoadingContract, setIsLoadingContract] = useState(true);
-  const [spinWheel, setSpinWheel] = useState<{ txHash: string; wallet: string } | null>(null);
-  const [mintSuccess, setMintSuccess] = useState<{ tokenId: number; txHash: string } | null>(null);
+  const [wheelContext, setWheelContext] = useState<{ txHash: string; wallet: string } | null>(null);
+  const [wheelSpinsRemaining, setWheelSpinsRemaining] = useState(0);
+  const [wheelModalOpen, setWheelModalOpen] = useState(false);
+  const [mintSuccess, setMintSuccess] = useState<{ tokenId: number; txHash: string; wheelCount: number } | null>(null);
   const [contractData, setContractData] = useState<ContractData>({
     mintPrice: '2100',
     totalSupply: 650,
@@ -242,6 +244,21 @@ const Index: React.FC = () => {
     }
   }, [walletState.account, fetchUserMintInfo]);
 
+  // Wheel spins: each NFT minted triggers one spin sequentially.
+  // When the modal closes, we auto-open again until `wheelSpinsRemaining` reaches 0.
+  useEffect(() => {
+    if (!wheelContext) return;
+    if (wheelSpinsRemaining <= 0) {
+      setWheelModalOpen(false);
+      setWheelContext(null);
+      return;
+    }
+    if (!wheelModalOpen) {
+      const t = setTimeout(() => setWheelModalOpen(true), 350);
+      return () => clearTimeout(t);
+    }
+  }, [wheelContext, wheelSpinsRemaining, wheelModalOpen]);
+
   const connectPhantom = () => walletServiceRef.current?.connectPhantom();
   const connectMetaMask = () => walletServiceRef.current?.connectMetaMask();
   const disconnectWallet = () => walletServiceRef.current?.disconnectWallet();
@@ -353,7 +370,9 @@ const Index: React.FC = () => {
       await fetchUserMintInfo(walletState.account);
       setQuantity(1);
 
-      // Parse first minted token ID from NFTMinted event
+      // Parse all minted token IDs from Transfer events (from zero address -> user).
+      // This is needed so `quantity` NFTs minted => `quantity` wheel spins.
+      const mintedTokenIds: number[] = [];
       let firstTokenId = 0;
       try {
         const iface = new Interface(NFTLaunchpadABI as any);
@@ -366,8 +385,11 @@ const Index: React.FC = () => {
               const from = String(parsed.args[0]).toLowerCase();
               const to = String(parsed.args[1]).toLowerCase();
               if (from === zeroAddress && to === walletState.account.toLowerCase()) {
-                firstTokenId = Number(parsed.args[2]);
-                break;
+                const tokenId = Number(parsed.args[2]);
+                if (!Number.isNaN(tokenId)) {
+                  mintedTokenIds.push(tokenId);
+                  if (mintedTokenIds.length === 1) firstTokenId = tokenId;
+                }
               }
             }
           } catch {}
@@ -375,7 +397,8 @@ const Index: React.FC = () => {
       } catch {}
 
       // Show mall-door animation first, then wheel
-      setMintSuccess({ tokenId: firstTokenId, txHash: receipt.hash });
+      const wheelCount = mintedTokenIds.length > 0 ? mintedTokenIds.length : quantity;
+      setMintSuccess({ tokenId: firstTokenId, txHash: receipt.hash, wheelCount });
 
     } catch (error: any) {
       console.error('Mint error:', error);
@@ -854,19 +877,25 @@ const Index: React.FC = () => {
             tokenId={mintSuccess.tokenId}
             txHash={mintSuccess.txHash}
             onComplete={() => {
-              setSpinWheel({ txHash: mintSuccess.txHash, wallet: walletState.account });
+              setWheelContext({ txHash: mintSuccess.txHash, wallet: walletState.account });
+              setWheelSpinsRemaining(mintSuccess.wheelCount);
+              setWheelModalOpen(true);
               setMintSuccess(null);
             }}
           />
         )}
 
-        {/* Spin the wheel modal (one spin per mint) */}
-        {spinWheel && (
+        {/* Spin the wheel modal: one NFT => one wheel spin */}
+        {wheelContext && wheelSpinsRemaining > 0 && (
           <SpinWheelModal
-            open={!!spinWheel}
-            onOpenChange={(o) => !o && setSpinWheel(null)}
-            walletAddress={spinWheel.wallet}
-            mintTxHash={spinWheel.txHash}
+            open={wheelModalOpen}
+            onOpenChange={(o) => setWheelModalOpen(o)}
+            walletAddress={wheelContext.wallet}
+            mintTxHash={wheelContext.txHash}
+            onRecorded={() => {
+              // One wheel spin recorded in Supabase => decrement remaining count.
+              setWheelSpinsRemaining((r) => Math.max(0, r - 1));
+            }}
           />
         )}
       </div>
