@@ -408,7 +408,19 @@ const Index: React.FC = () => {
     }
 
     setIsMinting(true);
+    // Used for "recovery" mode in the catch block (UI error but mint succeeded on-chain).
+    // eslint-disable-next-line prefer-const
+    let mintedBefore = 0;
     try {
+      // Snapshot minted count before attempting the tx.
+      // In some cases (bad estimateGas / UI error) the tx can still succeed on-chain,
+      // so we use this to recover and open the wheel if that happens.
+      const walletAddr = walletState.account.toLowerCase();
+      const readProvider = getReadProvider();
+      const contractForReads = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, readProvider);
+      const mintedBeforeRaw = await contractForReads.minted(walletAddr);
+      mintedBefore = Number(mintedBeforeRaw);
+
       const signer = await getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, signer);
       
@@ -476,6 +488,36 @@ const Index: React.FC = () => {
       
       let errorMessage = 'An error occurred during minting';
       const msg = (error?.message || error?.reason || String(error)).trim();
+
+      // Recovery: if the UI failed but mint succeeded on-chain,
+      // the user's minted count will have increased.
+      try {
+        if (walletState.account) {
+          const walletAddr = walletState.account.toLowerCase();
+          // Give the chain a moment to include the mint (if it did).
+          await new Promise(r => setTimeout(r, 5000));
+          const readProvider = getReadProvider();
+          const contractForReads = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, readProvider);
+          const mintedAfterRaw = await contractForReads.minted(walletAddr);
+          const mintedAfter = Number(mintedAfterRaw);
+
+          const delta = Math.max(0, mintedAfter - mintedBefore);
+
+          if (delta > 0) {
+            toast({
+              title: 'Mint recovered',
+              description: `Mint succeeded on-chain. Opening wheel for ${delta} spin${delta > 1 ? 's' : ''}.`,
+            });
+            setWheelContext({ txHash: '', wallet: walletState.account });
+            setWheelSpinsRemaining(delta);
+            setWheelModalOpen(true);
+            setIsMinting(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore recovery errors and fall back to normal error toast
+      }
       
       // Parse common errors
       if (msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('denied')) {
