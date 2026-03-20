@@ -24,6 +24,7 @@ interface AdminPanelProps {
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconnect, onSetPublicPrice, onStartPublicPhase }) => {
   const { toast } = useToast();
   const [wheelPreviewOpen, setWheelPreviewOpen] = useState(false);
+  const [wheelTestOpen, setWheelTestOpen] = useState(false);
   
   // Collection settings state
   const [collectionSettings, setCollectionSettings] = useState({
@@ -411,6 +412,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
                     Preview wheel UI (no mint, no Supabase write)
                   </Button>
                 </div>
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWheelTestOpen(true)}
+                    disabled={spinResultsLoading}
+                    className="w-full"
+                  >
+                    Test spin (records to Supabase)
+                  </Button>
+                </div>
                 <div className="rounded-xl border border-border overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
@@ -492,6 +504,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
         walletAddress={walletState.account || '0x0000000000000000000000000000000000000000'}
         mintTxHash={'preview'}
         preview
+      />
+
+      <SpinWheelModal
+        open={wheelTestOpen}
+        onOpenChange={(o) => setWheelTestOpen(o)}
+        walletAddress={walletState.account || '0x0000000000000000000000000000000000000000'}
+        mintTxHash={'wheel_test'}
       />
     </div>
   );
