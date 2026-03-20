@@ -66,7 +66,7 @@ export const ADMIN_WALLET_ADDRESS = '0xf05443b49521Babda752Fa6ab8ad2B3eF51CB68f'
 // Mint phases display
 export const PREMINTED_SUPPLY = 150
 export const WHITELIST_PRICE_MON = 1700
-export const WHITELIST_DURATION_HOURS = 6
+export const WHITELIST_DURATION_HOURS = 24
 export const PUBLIC_PRICE_MON = 2100
 
 /** Frontend-only test mode: show 0.01 $MON, treat mint as active, send 0.01 MON on mint. Set to false when done testing. */
