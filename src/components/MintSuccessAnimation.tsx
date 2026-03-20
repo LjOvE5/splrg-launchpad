@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { IRYS_IMAGE_BASE } from '@/lib/config'
+import { IRYS_IMAGE_BASE, IRYS_METADATA_BASE } from '@/lib/config'
 import { playDoorWhoosh, playFootsteps, stopFootsteps, playMovieReveal } from '@/lib/sound'
 
 const DOOR_DURATION_MS = 10000
@@ -28,11 +28,35 @@ export const MintSuccessAnimation: React.FC<MintSuccessAnimationProps> = ({
   const [phase, setPhase] = useState<Phase>('doors')
   const [doorsOpen, setDoorsOpen] = useState(false)
   const [mallReveal, setMallReveal] = useState(false)
+  const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const t0 = setTimeout(() => playDoorWhoosh().catch(() => {}), 200)
     return () => clearTimeout(t0)
   }, [])
+
+  // Resolve image from token metadata (IRYS json points to image path).
+  // The reveal UI must not assume `/tokenId.png` exists at IRYS_IMAGE_BASE root.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const metaUrl = `${IRYS_METADATA_BASE}${tokenId}.json`
+        const res = await fetch(metaUrl)
+        if (!res.ok) throw new Error(`Metadata fetch failed: ${res.status}`)
+        const meta = await res.json()
+        const img = meta?.image
+        if (!cancelled && typeof img === 'string' && img.length > 0) {
+          setResolvedImageUrl(img)
+        }
+      } catch {
+        // Keep fallback image guess below.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [tokenId])
 
   useEffect(() => {
     const t1 = setTimeout(() => setDoorsOpen(true), DOOR_START_MS)
@@ -58,8 +82,8 @@ export const MintSuccessAnimation: React.FC<MintSuccessAnimationProps> = ({
     }
   }, [])
 
-  const nftImageUrl = `${IRYS_IMAGE_BASE}${tokenId}.png`
-  const nftImageUrlFallback = `${IRYS_IMAGE_BASE}${tokenId}`
+  const nftImageUrl = resolvedImageUrl ?? `${IRYS_IMAGE_BASE}${tokenId}.png`
+  const nftImageUrlFallback = resolvedImageUrl ? `${IRYS_IMAGE_BASE}${tokenId}.png` : `${IRYS_IMAGE_BASE}${tokenId}`
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black">
