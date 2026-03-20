@@ -52,7 +52,9 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
     if (preview) {
       try {
         const prizeIndex = Math.floor(Math.random() * WHEEL_PRIZES.length)
-        setSpinRecorded(false)
+        // In preview mode we still want to "consume" the spin for the UI flow,
+        // but we do NOT write anything to Supabase.
+        setSpinRecorded(true)
         setForcedPrizeIndex(prizeIndex)
         setResult(null)
         setStep('wheel')

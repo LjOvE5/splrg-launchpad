@@ -12,6 +12,7 @@ import { getSpinResults, isSupabaseConfigured, type SpinResult } from '@/lib/sup
 import splrgBg from '@/assets/splrg-bg.png';
 import splrgLogo from '@/assets/splrg-logo.jpg';
 import { SpinWheelModal } from '@/components/SpinWheelModal';
+import { MintSuccessAnimation } from '@/components/MintSuccessAnimation';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -25,6 +26,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
   const { toast } = useToast();
   const [wheelPreviewOpen, setWheelPreviewOpen] = useState(false);
   const [wheelTestOpen, setWheelTestOpen] = useState(false);
+  const [uiTestMint, setUiTestMint] = useState<{ tokenId: number; txHash: string } | null>(null);
+  const [uiTestWheelOpen, setUiTestWheelOpen] = useState(false);
   
   // Collection settings state
   const [collectionSettings, setCollectionSettings] = useState({
@@ -492,11 +495,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
                     Start public phase
                   </Button>
                 </div>
+
+                <div className="mt-6 space-y-3">
+                  <div className="text-sm text-muted-foreground">
+                    Full UI test mint (no blockchain, no supply changes). Runs the door/mall/NFT animation and then opens the wheel UI.
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const tokenId = Math.floor(Math.random() * 650) + 1
+                      setUiTestMint({ tokenId, txHash: 'ui_mint_test' })
+                    }}
+                    className="w-full"
+                  >
+                    Run full UI test mint (no chain)
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
         </main>
       </div>
+
+      {uiTestMint && (
+        <MintSuccessAnimation
+          tokenId={uiTestMint.tokenId}
+          txHash={uiTestMint.txHash}
+          onComplete={() => {
+            setUiTestMint(null)
+            setUiTestWheelOpen(true)
+          }}
+        />
+      )}
 
       <SpinWheelModal
         open={wheelPreviewOpen}
@@ -511,6 +541,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
         onOpenChange={(o) => setWheelTestOpen(o)}
         walletAddress={walletState.account || '0x0000000000000000000000000000000000000000'}
         mintTxHash={'wheel_test'}
+      />
+
+      <SpinWheelModal
+        open={uiTestWheelOpen}
+        onOpenChange={(o) => setUiTestWheelOpen(o)}
+        walletAddress={walletState.account || '0x0000000000000000000000000000000000000000'}
+        mintTxHash={'ui_mint_test'}
+        preview
       />
     </div>
   );
