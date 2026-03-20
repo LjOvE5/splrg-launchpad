@@ -9,9 +9,15 @@ interface SpinWheelProps {
   onComplete: (prize: WheelPrize) => void
   size?: number
   forcedPrizeIndex?: number | null
+  showSegmentLabels?: boolean
 }
 
-export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, forcedPrizeIndex = null }) => {
+export const SpinWheel: React.FC<SpinWheelProps> = ({
+  onComplete,
+  size = 280,
+  forcedPrizeIndex = null,
+  showSegmentLabels = false,
+}) => {
   const [rotation, setRotation] = useState(0)
   const [isSpinning, setIsSpinning] = useState(false)
   const resultIndexRef = useRef<number | null>(null)
@@ -105,8 +111,8 @@ export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, fo
               stroke="rgba(80,80,80,0.35)"
               strokeWidth={1.5}
             />
-            {/* Labels: hide while spinning to avoid overlap; show after landing */}
-            {!isSpinning &&
+            {/* Segment labels are intentionally hidden until the user sees the final win in the popup. */}
+            {showSegmentLabels &&
               WHEEL_PRIZES.map((prize, i) => {
                 let cursorTickets = 0
                 for (let j = 0; j < i; j++) cursorTickets += WHEEL_PRIZES[j].ticketCount

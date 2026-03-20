@@ -36,6 +36,7 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
   const [spinRecorded, setSpinRecorded] = useState(false)
 
   const wheelRound = DEFAULT_WHEEL_ROUND
+  const prizePool = WHEEL_PRIZES.filter((p) => p.id !== 'none')
 
   const handleSkip = () => {
     setStep('prompt')
@@ -139,6 +140,23 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
             <div className="rounded-full bg-primary/10 p-3 ring-2 ring-primary/20">
               <img src="/splrg-logo-wheel.png" alt="SPLRG" className="h-16 w-16 object-contain" />
             </div>
+
+            {/* Prize pool (shown before spin) */}
+            <div className="w-full">
+              <div className="text-sm font-semibold text-foreground mb-2">Prize pool</div>
+              <div className="grid grid-cols-2 gap-2">
+                {prizePool.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-muted/20"
+                  >
+                    <span className="text-xs text-foreground font-medium">{p.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{p.ticketCount} tickets</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="flex w-full gap-3">
               <Button
                 variant="outline"
@@ -160,7 +178,12 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
 
         {step === 'wheel' && (
           <div className="py-2">
-            <SpinWheel onComplete={handleComplete} size={360} forcedPrizeIndex={forcedPrizeIndex} />
+            <SpinWheel
+              onComplete={handleComplete}
+              size={360}
+              forcedPrizeIndex={forcedPrizeIndex}
+              showSegmentLabels={false}
+            />
           </div>
         )}
 
