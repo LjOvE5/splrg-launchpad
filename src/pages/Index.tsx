@@ -47,6 +47,11 @@ enum MintPhase {
   Complete = 3
 }
 
+// Frontend-only snapshot used to display "public sold" excluding any whitelist mints.
+// Because the contract doesn't separate counters on-chain, we take a snapshot the first time
+// the UI observes the Public phase and then compute Public sold as (mintedNow - mintedAtSnapshot).
+const PUBLIC_MINT_START_SNAPSHOT_KEY = `splrg_public_mint_start_${'0x4a51E9de2a8A28D0D368FE4192ce37570cc904f7'.toLowerCase()}`;
+
 interface ContractData {
   mintPrice: string;
   totalSupply: number;
@@ -88,6 +93,25 @@ const Index: React.FC = () => {
     userRemaining: 3,
     canMint: false
   });
+
+  const [publicMintedAtStart, setPublicMintedAtStart] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(PUBLIC_MINT_START_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  });
+
+  // Take the snapshot once: when we first observe the Public phase, lock mintedAtStart
+  // so UI counters for "Public sold" ignore whitelist mints.
+  useEffect(() => {
+    if (contractData.currentPhase !== MintPhase.Public) return;
+    if (publicMintedAtStart != null) return;
+    setPublicMintedAtStart(contractData.minted);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(PUBLIC_MINT_START_SNAPSHOT_KEY, String(contractData.minted));
+    }
+  }, [contractData.currentPhase, contractData.minted, publicMintedAtStart]);
 
   // Intro video: transition handled by video onEnded
 
@@ -316,6 +340,10 @@ const Index: React.FC = () => {
   const remaining = contractData.totalSupply - contractData.minted;
   const maxMint = remaining;
   const totalPrice = Math.round(parseFloat(contractData.mintPrice) * quantity);
+
+  const publicMintedAtStartSafe = publicMintedAtStart ?? PREMINTED_SUPPLY;
+  const publicSold = Math.max(0, contractData.minted - publicMintedAtStartSafe);
+  const publicTotalAtStart = Math.max(0, contractData.totalSupply - publicMintedAtStartSafe);
 
   // Get phase display text
   const getPhaseText = () => {
@@ -801,7 +829,7 @@ const Index: React.FC = () => {
                     <span className="text-xs text-muted-foreground">—</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">
-                        {isLoadingContract ? '...' : `${Math.max(0, contractData.minted - PREMINTED_SUPPLY)}/${Math.max(0, contractData.totalSupply - PREMINTED_SUPPLY)}`}
+                        {isLoadingContract ? '...' : `${publicSold}/${publicTotalAtStart}`}
                       </span>
                     </div>
                     <span className={`flex items-center gap-1.5 text-xs ${contractData.currentPhase === MintPhase.Public ? 'text-green-500' : contractData.currentPhase === MintPhase.Complete ? 'text-green-500' : contractData.currentPhase < MintPhase.Public ? 'text-yellow-500' : 'text-muted-foreground'}`}>
