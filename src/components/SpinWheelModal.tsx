@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -34,9 +34,43 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
   const [forcedPrizeIndex, setForcedPrizeIndex] = useState<number | null>(null)
   const [selecting, setSelecting] = useState(false)
   const [spinRecorded, setSpinRecorded] = useState(false)
+  const [prizePoolRemaining, setPrizePoolRemaining] = useState<Record<string, number> | null>(null)
 
   const wheelRound = DEFAULT_WHEEL_ROUND
   const prizePool = WHEEL_PRIZES.filter((p) => p.id !== 'none')
+
+  // When the wheel modal opens (and we're not in preview), fetch which prize tickets were already won
+  // so the "Prize pool" section can show remaining counts (e.g., 10x -> 9x).
+  useEffect(() => {
+    if (!open || preview) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const wonTicketIds = await getWonPrizeTicketIds(wheelRound)
+        const wonCounts: Record<string, number> = {}
+
+        for (const ticketId of wonTicketIds) {
+          // ticket ids are in the form `${prizeId}_${n}`
+          const lastUnderscore = ticketId.lastIndexOf('_')
+          const prizeId = lastUnderscore > 0 ? ticketId.slice(0, lastUnderscore) : ticketId
+          wonCounts[prizeId] = (wonCounts[prizeId] || 0) + 1
+        }
+
+        const remaining: Record<string, number> = {}
+        for (const prize of prizePool) {
+          remaining[prize.id] = prize.ticketCount - (wonCounts[prize.id] || 0)
+        }
+
+        if (!cancelled) setPrizePoolRemaining(remaining)
+      } catch {
+        if (!cancelled) setPrizePoolRemaining(null)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, preview, wheelRound])
 
   const handleSkip = () => {
     setStep('prompt')
@@ -147,15 +181,20 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
             <div className="w-full">
               <div className="text-sm font-semibold text-foreground mb-2">Prize pool</div>
               <div className="grid grid-cols-2 gap-2">
-                {prizePool.map((p) => (
+                {prizePool.map((p) => {
+                  const remaining = prizePoolRemaining?.[p.id] ?? p.ticketCount
+                  return (
                   <div
                     key={p.id}
                     className="flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-muted/20"
                   >
                     <span className="text-xs text-foreground font-medium">{p.label}</span>
-                    <span className="text-[10px] text-muted-foreground">{p.ticketCount} tickets</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {remaining} remaining
+                    </span>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
