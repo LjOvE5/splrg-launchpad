@@ -112,25 +112,38 @@ const Index: React.FC = () => {
   const fetchContractData = useCallback(async (opts?: { silent?: boolean }): Promise<boolean> => {
     const runFetch = async (provider: BrowserProvider | JsonRpcProvider) => {
       const contract = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, provider);
-      const [publicPrice, maxSupply, totalMinted, maxPerWallet, publicActive] = await Promise.all([
+      const [
+        publicPrice,
+        whitelistPrice,
+        maxSupply,
+        totalMinted,
+        maxPerWallet,
+        publicActive,
+        whitelistActive
+      ] = await Promise.all([
         contract.publicPrice(),
+        contract.whitelistPrice(),
         contract.maxSupply(),
         contract.totalSupply(),
         contract.maxPerWallet(),
-        contract.publicMintActive()
+        contract.publicMintActive(),
+        contract.whitelistMintActive()
       ]);
       const supplyCount = Number(maxSupply);
       const mintedCount = Number(totalMinted);
       let phase: MintPhase;
       if (mintedCount >= supplyCount && supplyCount > 0) {
         phase = MintPhase.Complete;
+      } else if (whitelistActive) {
+        phase = MintPhase.Whitelist;
       } else if (publicActive) {
         phase = MintPhase.Public;
       } else {
         phase = MintPhase.Inactive;
       }
 
-      const priceInMonRaw = formatEther(publicPrice);
+      const priceSource = phase === MintPhase.Whitelist ? whitelistPrice : publicPrice;
+      const priceInMonRaw = formatEther(priceSource);
       const priceInMon = parseFloat(priceInMonRaw).toString(); // strip trailing .0
       setContractData(prev => ({
         ...prev,
@@ -185,19 +198,32 @@ const Index: React.FC = () => {
     try {
       const provider = getReadProvider();
       const contract = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, provider);
-      const [mintedRaw, maxPerWalletRaw, totalSupplyRaw, maxSupplyRaw, publicActive] = await Promise.all([
+      const [
+        mintedRaw,
+        maxPerWalletRaw,
+        totalSupplyRaw,
+        maxSupplyRaw,
+        publicActive,
+        whitelistActive,
+        whitelisted
+      ] = await Promise.all([
         contract.minted(address),
         contract.maxPerWallet(),
         contract.totalSupply(),
         contract.maxSupply(),
-        contract.publicMintActive()
+        contract.publicMintActive(),
+        contract.whitelistMintActive(),
+        contract.isWhitelisted(address)
       ]);
       const minted = Number(mintedRaw);
       const maxPerWallet = Number(maxPerWalletRaw);
       const totalSupply = Number(totalSupplyRaw);
       const maxSupply = Number(maxSupplyRaw);
       const remaining = Math.max(0, maxPerWallet - minted);
-      const canMint = remaining > 0 && publicActive && totalSupply < maxSupply;
+      const canMint =
+        remaining > 0 &&
+        totalSupply < maxSupply &&
+        ((publicActive) || (whitelistActive && whitelisted));
       setContractData(prev => ({
         ...prev,
         userMinted: minted,
@@ -242,7 +268,7 @@ const Index: React.FC = () => {
     if (walletState.account) {
       fetchUserMintInfo(walletState.account);
     }
-  }, [walletState.account, fetchUserMintInfo]);
+  }, [walletState.account, fetchUserMintInfo, contractData.currentPhase]);
 
   // Wheel spins: each NFT minted triggers one spin sequentially.
   // When the modal closes, we auto-open again until `wheelSpinsRemaining` reaches 0.
@@ -296,6 +322,8 @@ const Index: React.FC = () => {
     switch (contractData.currentPhase) {
       case MintPhase.Inactive:
         return 'Mint Inactive';
+      case MintPhase.Whitelist:
+        return 'Whitelist Mint Active';
       case MintPhase.Public:
         return 'Minting Live';
       case MintPhase.Complete:
@@ -305,7 +333,9 @@ const Index: React.FC = () => {
     }
   };
 
-  const isMintActive = contractData.currentPhase === MintPhase.Public;
+  const isMintActive =
+    contractData.currentPhase === MintPhase.Public ||
+    contractData.currentPhase === MintPhase.Whitelist;
 
   const handleQuantityChange = (delta: number) => {
     const newQuantity = quantity + delta;
@@ -342,15 +372,16 @@ const Index: React.FC = () => {
       const signer = await getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, NFTLaunchpadABI, signer);
       
-      // Use contract's actual publicPrice for value
-      const rawPrice = await contract.publicPrice();
+      const isWhitelistPhase = contractData.currentPhase === MintPhase.Whitelist;
+      // Use contract's actual on-chain price for value (public vs whitelist).
+      const rawPrice = isWhitelistPhase ? await contract.whitelistPrice() : await contract.publicPrice();
       const pricePerNft = typeof rawPrice === 'bigint' ? rawPrice : BigInt(rawPrice.toString());
       const totalCost = pricePerNft * BigInt(quantity);
 
-      // Call publicMint with quantity and send MON
-      const tx = await contract.publicMint(quantity, {
-        value: totalCost
-      });
+      // Call the correct mint function and send MON value.
+      const tx = isWhitelistPhase
+        ? await contract.whitelistMint(quantity, { value: totalCost })
+        : await contract.publicMint(quantity, { value: totalCost });
 
       toast({
         title: 'Transaction Submitted',
@@ -413,10 +444,16 @@ const Index: React.FC = () => {
         errorMessage = 'Insufficient MON balance';
       } else if (msg.includes('ExceedsMaxPerWallet')) {
         errorMessage = 'You have reached the maximum mint per wallet';
+      } else if (msg.includes('Max per wallet')) {
+        errorMessage = 'You have reached the maximum mint per wallet';
       } else if (msg.includes('ExceedsMaxSupply')) {
         errorMessage = 'Not enough supply remaining';
-      } else if (msg.includes('PublicPhaseNotActive')) {
+      } else if (msg.includes('Public mint closed')) {
         errorMessage = 'Public minting is not active';
+      } else if (msg.includes('Whitelist mint closed')) {
+        errorMessage = 'Whitelist minting is not active';
+      } else if (msg.includes('Not whitelisted')) {
+        errorMessage = 'You are not whitelisted';
       } else if (msg.includes('InsufficientPayment') || msg.includes('Wrong amount')) {
         errorMessage = 'Insufficient payment sent (wrong MON amount)';
       } else if (msg.includes('-32603') || msg.includes('Unexpected error') || msg.includes('could not coalesce')) {
@@ -741,8 +778,20 @@ const Index: React.FC = () => {
                       <span className="text-sm text-muted-foreground">—</span>
                     </div>
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-                      Coming soon
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          contractData.currentPhase === MintPhase.Whitelist
+                            ? 'bg-green-500 animate-pulse'
+                            : contractData.currentPhase === MintPhase.Complete
+                              ? 'bg-green-500'
+                              : 'bg-muted-foreground'
+                        }`}
+                      />
+                      {contractData.currentPhase === MintPhase.Whitelist
+                        ? 'Active'
+                        : contractData.currentPhase === MintPhase.Complete
+                          ? 'Ended'
+                          : 'Upcoming'}
                     </span>
                   </div>
                   {/* Phase 3: Public — uses on-chain SPLRGLaunchpad publicPrice */}
@@ -841,13 +890,17 @@ const Index: React.FC = () => {
                 ) : (
                   <Button
                     onClick={handleMint}
-                    disabled={isMinting}
+                    disabled={isMinting || !contractData.canMint}
                     className="w-full btn-gold h-14 text-lg font-semibold rounded-xl animate-pulse-glow"
                   >
                     {isMinting ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         Minting...
+                      </>
+                    ) : !contractData.canMint ? (
+                      <>
+                        {contractData.currentPhase === MintPhase.Whitelist ? 'Not whitelisted' : 'Mint not available'}
                       </>
                     ) : (
                       <>
