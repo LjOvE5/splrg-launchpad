@@ -105,33 +105,35 @@ export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, fo
               stroke="rgba(80,80,80,0.35)"
               strokeWidth={1.5}
             />
-            {/* Labels: rotate each segment and put text in middle */}
-            {WHEEL_PRIZES.map((prize, i) => {
-              let cursorTickets = 0
-              for (let j = 0; j < i; j++) cursorTickets += WHEEL_PRIZES[j].ticketCount
-              const startAngle = (cursorTickets / TOTAL_TICKETS) * 360
-              const endAngle = ((cursorTickets + prize.ticketCount) / TOTAL_TICKETS) * 360
-              const midAngle = (startAngle + (endAngle - startAngle) / 2) - 90
-              const rad = (midAngle * Math.PI) / 180
-              const labelR = innerR * 0.65
-              const x = radius + labelR * Math.cos(rad)
-              const y = radius + labelR * Math.sin(rad)
-              const rot = (startAngle + (endAngle - startAngle) / 2)
-              return (
-                <g key={`label-${prize.id}`} transform={`translate(${x}, ${y}) rotate(${rot})`}>
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill="rgba(255,255,255,0.95)"
-                    fontSize={size * 0.048}
-                    fontWeight="600"
-                    style={{ fontFamily: 'Montserrat, sans-serif' }}
-                  >
-                    {prize.label.length > 18 ? prize.label.slice(0, 16) + '…' : prize.label}
-                  </text>
-                </g>
-              )
-            })}
+            {/* Labels: hide while spinning to avoid overlap; show after landing */}
+            {!isSpinning &&
+              WHEEL_PRIZES.map((prize, i) => {
+                let cursorTickets = 0
+                for (let j = 0; j < i; j++) cursorTickets += WHEEL_PRIZES[j].ticketCount
+                const startAngle = (cursorTickets / TOTAL_TICKETS) * 360
+                const endAngle = ((cursorTickets + prize.ticketCount) / TOTAL_TICKETS) * 360
+                const midAngle = (startAngle + (endAngle - startAngle) / 2) - 90
+                const rad = (midAngle * Math.PI) / 180
+                const labelR = innerR * 0.65
+                const x = radius + labelR * Math.cos(rad)
+                const y = radius + labelR * Math.sin(rad)
+                const rot = (startAngle + (endAngle - startAngle) / 2)
+
+                return (
+                  <g key={`label-${prize.id}`} transform={`translate(${x}, ${y}) rotate(${rot})`}>
+                    <text
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="rgba(255,255,255,0.95)"
+                      fontSize={size * 0.048}
+                      fontWeight="600"
+                      style={{ fontFamily: 'Montserrat, sans-serif' }}
+                    >
+                      {prize.label.length > 18 ? prize.label.slice(0, 16) + '…' : prize.label}
+                    </text>
+                  </g>
+                )
+              })}
           </svg>
         </div>
       </div>
