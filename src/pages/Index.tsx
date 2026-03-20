@@ -338,7 +338,12 @@ const Index: React.FC = () => {
     ? (displayMinted / contractData.totalSupply) * 100 
     : 0;
   const remaining = contractData.totalSupply - contractData.minted;
-  const maxMint = remaining;
+  // Deployed contract still enforces `maxPerWallet`. Even if we hide it in UI,
+  // we must clamp quantity to avoid `estimateGas` reverts when user has fewer
+  // per-wallet slots remaining.
+  const maxMint = contractData.userRemaining > 0
+    ? Math.min(remaining, contractData.userRemaining)
+    : 0;
   const totalPrice = Math.round(parseFloat(contractData.mintPrice) * quantity);
 
   const publicMintedAtStartSafe = publicMintedAtStart ?? PREMINTED_SUPPLY;
@@ -371,6 +376,13 @@ const Index: React.FC = () => {
       setQuantity(newQuantity);
     }
   };
+
+  // If per-wallet remaining decreases (e.g. after a previous mint), clamp quantity
+  // so the next mint can't exceed on-chain maxPerWallet.
+  useEffect(() => {
+    if (quantity > maxMint && maxMint >= 1) setQuantity(maxMint);
+    if (maxMint < 1 && quantity !== 1) setQuantity(1);
+  }, [maxMint]);
 
   const handleMint = async () => {
     prepareAudio().catch(() => {});
