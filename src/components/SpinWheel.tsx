@@ -1,8 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react'
-import { WHEEL_PRIZES, pickRandomPrizeIndex, type WheelPrize } from '@/config/wheel'
+import { WHEEL_PRIZES, pickRandomPrizeTypeIndexByTickets, type WheelPrize } from '@/config/wheel'
 
-const SEGMENT_ANGLES = WHEEL_PRIZES.map((_, i) => (360 / WHEEL_PRIZES.length) * (i + 1)) // cumulative: 120, 240, 360
-const SEGMENT_DEG = 360 / WHEEL_PRIZES.length // 120
+const TOTAL_TICKETS = WHEEL_PRIZES.reduce((s, p) => s + p.ticketCount, 0) || 1
 const SPIN_DURATION_MS = 5000
 const EXTRA_ROTATIONS = 5
 
@@ -19,11 +18,17 @@ export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, fo
 
   const spin = useCallback(() => {
     if (isSpinning) return
-    const index = forcedPrizeIndex != null ? forcedPrizeIndex : pickRandomPrizeIndex()
+    const index =
+      forcedPrizeIndex != null ? forcedPrizeIndex : pickRandomPrizeTypeIndexByTickets()
     resultIndexRef.current = index
     setIsSpinning(true)
-    // Center of winning segment (degrees from top): index * 120 + 60
-    const segmentCenter = index * SEGMENT_DEG + SEGMENT_DEG / 2
+    // Segment center in degrees from top, clockwise.
+    let cursorTickets = 0
+    for (let i = 0; i < index; i++) cursorTickets += WHEEL_PRIZES[i].ticketCount
+    const segmentTickets = WHEEL_PRIZES[index].ticketCount
+    const segmentStartAngle = (cursorTickets / TOTAL_TICKETS) * 360
+    const segmentEndAngle = ((cursorTickets + segmentTickets) / TOTAL_TICKETS) * 360
+    const segmentCenter = (segmentStartAngle + segmentEndAngle) / 2
     // Final rotation so pointer (top) points to that segment: we rotate wheel, so pointer stays at 0; wheel angle at top = -rotation. We want -rotation mod 360 = segmentCenter, so rotation = 360 - segmentCenter + 360*k
     const finalAngle = 360 * EXTRA_ROTATIONS + (360 - segmentCenter)
     setRotation(finalAngle)
@@ -64,8 +69,10 @@ export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, fo
         >
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-full">
             {WHEEL_PRIZES.map((prize, i) => {
-              const startAngle = (i * 360) / WHEEL_PRIZES.length
-              const endAngle = ((i + 1) * 360) / WHEEL_PRIZES.length
+              let cursorTickets = 0
+              for (let j = 0; j < i; j++) cursorTickets += WHEEL_PRIZES[j].ticketCount
+              const startAngle = (cursorTickets / TOTAL_TICKETS) * 360
+              const endAngle = ((cursorTickets + prize.ticketCount) / TOTAL_TICKETS) * 360
               const startRad = ((startAngle - 90) * Math.PI) / 180
               const endRad = ((endAngle - 90) * Math.PI) / 180
               const x1 = radius + innerR * Math.cos(startRad)
@@ -100,12 +107,16 @@ export const SpinWheel: React.FC<SpinWheelProps> = ({ onComplete, size = 280, fo
             />
             {/* Labels: rotate each segment and put text in middle */}
             {WHEEL_PRIZES.map((prize, i) => {
-              const midAngle = ((i + 0.5) * 360) / WHEEL_PRIZES.length - 90
+              let cursorTickets = 0
+              for (let j = 0; j < i; j++) cursorTickets += WHEEL_PRIZES[j].ticketCount
+              const startAngle = (cursorTickets / TOTAL_TICKETS) * 360
+              const endAngle = ((cursorTickets + prize.ticketCount) / TOTAL_TICKETS) * 360
+              const midAngle = (startAngle + (endAngle - startAngle) / 2) - 90
               const rad = (midAngle * Math.PI) / 180
               const labelR = innerR * 0.65
               const x = radius + labelR * Math.cos(rad)
               const y = radius + labelR * Math.sin(rad)
-              const rot = (i + 0.5) * (360 / WHEEL_PRIZES.length)
+              const rot = (startAngle + (endAngle - startAngle) / 2)
               return (
                 <g key={`label-${prize.id}`} transform={`translate(${x}, ${y}) rotate(${rot})`}>
                   <text

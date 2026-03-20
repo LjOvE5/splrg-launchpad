@@ -249,8 +249,8 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (!wheelContext) return;
     if (wheelSpinsRemaining <= 0) {
+      if (!wheelModalOpen) setWheelContext(null);
       setWheelModalOpen(false);
-      setWheelContext(null);
       return;
     }
     if (!wheelModalOpen) {
@@ -886,14 +886,14 @@ const Index: React.FC = () => {
         )}
 
         {/* Spin the wheel modal: one NFT => one wheel spin */}
-        {wheelContext && wheelSpinsRemaining > 0 && (
+        {wheelContext && (wheelSpinsRemaining > 0 || wheelModalOpen) && (
           <SpinWheelModal
             open={wheelModalOpen}
             onOpenChange={(o) => setWheelModalOpen(o)}
             walletAddress={wheelContext.wallet}
             mintTxHash={wheelContext.txHash}
-            onRecorded={() => {
-              // One wheel spin recorded in Supabase => decrement remaining count.
+            onSpinFinished={() => {
+              // Decrement after the user finishes the spin (so we don't close mid-animation).
               setWheelSpinsRemaining((r) => Math.max(0, r - 1));
             }}
           />
