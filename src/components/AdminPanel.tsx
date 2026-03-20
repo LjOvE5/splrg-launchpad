@@ -11,6 +11,7 @@ import type { WalletState } from '@/lib/walletService';
 import { getSpinResults, isSupabaseConfigured, type SpinResult } from '@/lib/supabase';
 import splrgBg from '@/assets/splrg-bg.png';
 import splrgLogo from '@/assets/splrg-logo.jpg';
+import { SpinWheelModal } from '@/components/SpinWheelModal';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -22,6 +23,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconnect, onSetPublicPrice, onStartPublicPhase }) => {
   const { toast } = useToast();
+  const [wheelPreviewOpen, setWheelPreviewOpen] = useState(false);
   
   // Collection settings state
   const [collectionSettings, setCollectionSettings] = useState({
@@ -398,6 +400,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
                   <RefreshCw className={`h-4 w-4 mr-2 ${spinResultsLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWheelPreviewOpen(true)}
+                    disabled={spinResultsLoading}
+                    className="w-full"
+                  >
+                    Preview wheel UI (no mint, no Supabase write)
+                  </Button>
+                </div>
                 <div className="rounded-xl border border-border overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
@@ -472,6 +485,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, walletState, onDisconne
           </Tabs>
         </main>
       </div>
+
+      <SpinWheelModal
+        open={wheelPreviewOpen}
+        onOpenChange={(o) => setWheelPreviewOpen(o)}
+        walletAddress={walletState.account || '0x0000000000000000000000000000000000000000'}
+        mintTxHash={'preview'}
+        preview
+      />
     </div>
   );
 };

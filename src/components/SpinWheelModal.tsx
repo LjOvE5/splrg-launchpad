@@ -17,6 +17,7 @@ interface SpinWheelModalProps {
   onOpenChange: (open: boolean) => void
   walletAddress: string
   mintTxHash: string
+  preview?: boolean
   onSpinFinished?: () => void
 }
 
@@ -25,6 +26,7 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
   onOpenChange,
   walletAddress,
   mintTxHash,
+  preview = false,
   onSpinFinished,
 }) => {
   const [step, setStep] = useState<Step>('prompt')
@@ -46,6 +48,18 @@ export const SpinWheelModal: React.FC<SpinWheelModalProps> = ({
   const handleSpin = async () => {
     if (selecting) return
     setSelecting(true)
+    if (preview) {
+      try {
+        const prizeIndex = Math.floor(Math.random() * WHEEL_PRIZES.length)
+        setSpinRecorded(false)
+        setForcedPrizeIndex(prizeIndex)
+        setResult(null)
+        setStep('wheel')
+      } finally {
+        setSelecting(false)
+      }
+      return
+    }
     try {
       // Claim a remaining ticket in Supabase before the animation completes.
       // This prevents two users from getting the same ticket instance.
