@@ -16,6 +16,7 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
     bool public publicMintActive = false;
     bool public whitelistMintActive = false;
     bool public transfersFrozen = true; // transfers locked until you unfreeze
+    bool public metadataFrozen = false;
 
     string private baseURI;
 
@@ -37,6 +38,7 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
     }
 
     function setBaseURI(string memory uri) external onlyOwner {
+        require(!metadataFrozen, "Metadata frozen");
         baseURI = uri;
     }
 
@@ -51,6 +53,10 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
 
     function setTransfersFrozen(bool frozen) external onlyOwner {
         transfersFrozen = frozen;
+    }
+
+    function freezeMetadata() external onlyOwner {
+        metadataFrozen = true;
     }
 
     // _update is called on mint, transfer, burn.
@@ -145,10 +151,10 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
 
     // Whitelist phase mint
     function whitelistMint(uint256 qty) external payable {
+        require(qty > 0, "Quantity must be > 0");
         require(whitelistMintActive, "Whitelist mint closed");
         require(isWhitelisted[msg.sender], "Not whitelisted");
         require(totalSupply() + qty <= maxSupply, "Sold out");
-        require(minted[msg.sender] + qty <= maxPerWallet, "Max per wallet");
         require(msg.value >= whitelistPrice * qty, "Not enough ETH");
 
         minted[msg.sender] += qty;
@@ -159,9 +165,9 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
 
     // Public phase mint
     function publicMint(uint256 qty) external payable {
+        require(qty > 0, "Quantity must be > 0");
         require(publicMintActive, "Public mint closed");
         require(totalSupply() + qty <= maxSupply, "Sold out");
-        require(minted[msg.sender] + qty <= maxPerWallet, "Max per wallet");
         require(msg.value >= publicPrice * qty, "Not enough ETH");
 
         minted[msg.sender] += qty;
@@ -173,6 +179,7 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
     // ========= Premint (owner only) =========
 
     function premint(uint256 qty, address to) external onlyOwner {
+        require(qty > 0, "Quantity must be > 0");
         require(totalSupply() + qty <= maxSupply, "Sold out");
 
         for (uint256 i = 0; i < qty; i++) {
@@ -184,6 +191,7 @@ contract SPLRGLaunchpad is ERC721Enumerable, Ownable {
     // ========= Withdraw =========
 
     function withdraw() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        (bool ok, ) = payable(owner()).call{value: address(this).balance}("");
+        require(ok, "Withdraw failed");
     }
 }

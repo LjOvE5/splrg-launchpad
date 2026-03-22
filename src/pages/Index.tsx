@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Wallet, Minus, Plus, Loader2, Sparkles, Globe, Settings, ChevronDown, RefreshCw, Clock } from 'lucide-react';
+import { Wallet, Minus, Plus, Loader2, Sparkles, Globe, Settings, ChevronDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { WalletService, type WalletState } from '@/lib/walletService';
@@ -14,7 +14,7 @@ import { MintSuccessAnimation } from '@/components/MintSuccessAnimation';
 import { prepareAudio } from '@/lib/sound';
 import { FallingLogos } from '@/components/FallingLogos';
 import NFTLaunchpadArtifact from '@/abi/NFTLaunchpadABI.json';
-import { getNetworkConfig, getRpcUrlForChainId, CHAIN_IDS, FALLBACK_RPC_URLS, IRYS_IMAGE_BASE, ADMIN_WALLET_ADDRESS, PREMINTED_SUPPLY, WHITELIST_PRICE_MON, WHITELIST_DURATION_HOURS, PUBLIC_PRICE_MON, TEST_MINT_MODE } from '@/lib/config';
+import { getNetworkConfig, getRpcUrlForChainId, CHAIN_IDS, FALLBACK_RPC_URLS, IRYS_IMAGE_BASE, ADMIN_WALLET_ADDRESS, PREMINTED_SUPPLY, WHITELIST_PRICE_MON, PUBLIC_PRICE_MON, TEST_MINT_MODE } from '@/lib/config';
 
 // Extract ABI from artifact
 const NFTLaunchpadABI = NFTLaunchpadArtifact.abi;
@@ -852,10 +852,7 @@ const Index: React.FC = () => {
                   <div className="flex items-center justify-between gap-4 px-4 py-3 bg-muted/20 border-b border-border">
                     <span className="font-medium text-foreground">Whitelist</span>
                     <span className="text-sm font-medium text-foreground">{WHITELIST_PRICE_MON} $MON</span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5" />
-                      {WHITELIST_DURATION_HOURS}h
-                    </span>
+                    <span className="text-xs text-muted-foreground">—</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">—</span>
                     </div>
