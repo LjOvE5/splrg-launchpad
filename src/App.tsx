@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import Index from './pages/Index';
+import Airdrop from './pages/Airdrop';
 import NotFound from './pages/NotFound';
 
 const App: React.FC = () => {
@@ -10,6 +11,7 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/admin" element={<Index />} />
+        <Route path="/airdrop" element={<Airdrop />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
